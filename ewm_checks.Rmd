@@ -1,0 +1,129 @@
+---
+title: "EWM checks"
+author: "Balint SZEBENYI"
+date: '2016 december 1 '
+output: html_document
+---
+
+
+
+```{r knitr_setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+PROJECT_DIR <- '/home/szebenyib/win7_link/projektek/2016_audi/ewm/'
+knitr::opts_knit$set(root.dir = PROJECT_DIR)
+options(java.parameters = "-Xmx4096m")
+```
+
+```{r load_packages}
+library(dplyr)
+library(testthat)
+```
+
+## GH_EW_01
+
+```{r read_data}
+df <- read.csv(file = paste(PROJECT_DIR,
+                     "result_package_gh_ew_01_mls.csv",
+                     sep=""),
+               header = TRUE,
+               sep = ",",
+               dec = ",")
+df <- tbl_df(df)
+```
+
+```{r}
+df <- df %>% 
+  rename(GEWHUGUID = X.BIC.GEWHUGUID) %>%
+  rename(GEWPWAGEN = X.BIC.GEWPWAGEN) %>%
+  rename(G0WM_TU_N = X.BIC.G0WM_TU_N) %>%
+  rename(GEWVBELN = X.BIC.GEWVBELN) %>%
+  rename(GEWTSTP00 = X.BIC.GEWTSTP00) %>%
+  rename(GEWTSTP10 = X.BIC.GEWTSTP10) %>%
+  rename(GEWTSTP20 = X.BIC.GEWTSTP20) %>%
+  rename(GEWTSTP30 = X.BIC.GEWTSTP30) %>%
+  rename(GEWTSTP40 = X.BIC.GEWTSTP40) %>%
+  rename(GEWTSTP45 = X.BIC.GEWTSTP45) %>%
+  rename(GEWTSTP50 = X.BIC.GEWTSTP50) %>%
+  rename(GEWTSTP60 = X.BIC.GEWTSTP60) %>%
+  rename(GEWTSTP65 = X.BIC.GEWTSTP65) %>%
+  rename(GEWTSTP70 = X.BIC.GEWTSTP70) %>%
+  rename(GEWTSTP75 = X.BIC.GEWTSTP75) %>%
+  rename(GEWTSTP80 = X.BIC.GEWTSTP80) %>%
+  rename(GEWTSTP90 = X.BIC.GEWTSTP90) %>%
+  rename(GEWTSTP95 = X.BIC.GEWTSTP95) %>%
+  rename(GEWSTAT10 = X.BIC.GEWSTAT10) %>%
+  rename(GEWSTAT15 = X.BIC.GEWSTAT15) %>%
+  rename(GEWSTAT20 = X.BIC.GEWSTAT20) %>%
+  rename(GEWSTAT30 = X.BIC.GEWSTAT30) %>%
+  rename(GEWSTAT40 = X.BIC.GEWSTAT40) %>%
+  rename(GEWSTAT45 = X.BIC.GEWSTAT45) %>%
+  rename(GEWSTAT50 = X.BIC.GEWSTAT50) %>%
+  rename(GEWSTAT60 = X.BIC.GEWSTAT60) %>%
+  rename(GEWSTAT65 = X.BIC.GEWSTAT65) %>%
+  rename(GEWSTAT70 = X.BIC.GEWSTAT70) %>%
+  rename(GEWSTAT75 = X.BIC.GEWSTAT75) %>%
+  rename(GEWSTAT80 = X.BIC.GEWSTAT80) %>%
+  rename(GEWSTAT90 = X.BIC.GEWSTAT90) %>%
+  rename(GEWSTAT95 = X.BIC.GEWSTAT95) %>%
+  rename(GEWSTAT99 = X.BIC.GEWSTAT99) %>%
+  rename(GEWSTATTL = X.BIC.GEWSTATTL) %>%
+  rename(GEWLSTAT = X.BIC.GEWLSTAT) %>%
+  rename(GEWTSTPUP = X.BIC.GEWTSTPUP) %>%
+  rename(GEW2030L = X.BIC.GEW2030L) %>%
+  rename(GEW3040L = X.BIC.GEW3040L) %>%
+  rename(GEW4045T = X.BIC.GEW4045T) %>%
+  rename(GEW6565T = X.BIC.GEW6565T) %>%
+  rename(GEW6575L = X.BIC.GEW6575L) %>%
+  rename(GEW7080L = X.BIC.GEW7080L) %>%
+  rename(GEW7575T = X.BIC.GEW7575T) %>%
+  rename(GEW8090L = X.BIC.GEW8090L) %>%
+  rename(GEW2080L = X.BIC.GEW2080L)
+```
+
+Keep only the values where we have a TE
+
+```{r}
+dfx <- df %>% 
+  filter(!is.na(G0WM_TU_N)) %>%
+  arrange(G0WM_TU_N)
+```
+
+```{r LE_checks}
+a <- dfx %>%
+  mutate(result = GEWTSTP30 - GEWTSTP20 - GEW2030L) %>%
+  filter(result != 0)
+test_that(desc = "2030L", code = {
+  expect_equal(object = nrow(a),
+               expected = 0)
+})
+```
+
+```{r TE_checks}
+te_calcs <- dfx %>%
+  group_by(G0WM_TU_N) %>%
+  summarise(minGEWTSTP40 = min(GEWTSTP40),
+            maxGEWTSTP45 = max(GEWTSTP45),
+            avgGEWTSTP45 = mean(GEWTSTP45),
+            minGEWTSTP65 = min(GEWTSTP65),
+            maxGEWTSTP65 = max(GEWTSTP65),
+            minGEWTSTP75 = min(GEWTSTP75),
+            maxGEWTSTP75 = max(GEWTSTP75)) %>%
+  mutate(calc4045T = maxGEWTSTP45 - minGEWTSTP40,
+         calc6565T = maxGEWTSTP65 - minGEWTSTP65,
+         calc7575T = maxGEWTSTP75 - minGEWTSTP75)
+dfx <- left_join(dfx, te_calcs,
+                 by = "G0WM_TU_N")
+# test_that(desc = "2030L", code = {
+#   expect_equal(object = nrow(a),
+#                expected = 0)
+# })
+```
+
+
+```{r export}
+write.csv(x = dfx,
+          file = "dfx.csv")
+```
