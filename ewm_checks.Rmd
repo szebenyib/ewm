@@ -171,6 +171,8 @@ le_tester(df = dfx,
           earlier_tstp = 20)
 ```
 
+In case of TE calculations if min is to be calculated but there are NAs present in the records, then the minimum will not be calculated. If the minimum is not calculated, then the difference is also NA. Comparing 0s from SAP and NAs from R (0 - NA) will result in NAs and those are not selected by the dplyr filter statement.
+
 ```{r TE_checks}
 te_calcs <- dfx %>%
   group_by(G0WM_TU_N) %>%
