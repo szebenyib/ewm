@@ -127,32 +127,48 @@ le_tester <- function(df, later_tstp, earlier_tstp) {
                          later_tstp,
                          "L",
                          sep = "")
-  # mutate_call <- lazyeval::interp(~ )
   a <- df %>%
-    mutate_(result = paste(later_tstp_name,
+    mutate_(result = as.formula(paste("~time_length((",
+                           later_tstp_name,
                            "-",
                            earlier_tstp_name,
-                           sep = "")) %>%
-    # mutate_(result = time_length((later_tstp_name - earlier_tstp_name),
-    #                             "seconds") - result_name_abap) %>%
-    filter(result != 0)
-  test_that(desc = result_name_r, code = {
-    expect_equal(object = nrow(a),
-                 expected = 0)
-  })
-  remove(a)
+                           "), 'seconds') - ",
+                           result_name_abap,
+                           sep = ""))) %>%
+    # Translates into:
+    # mutate(result = time_length(("GEWTSTP30" - "GEWTSTP20"),
+    #                          "seconds") - "GEW2030L") %>%
+    filter(abs(result) > 0.01)
+    # Minor differences may occur due to calculations and time_length
+    # returning numeric and not integer, this is only a number
+    # arithmetic phenomenon and not an error.
+  if (nrow(a) != 0) {
+    browser()
+  } else {
+    test_that(desc = result_name_r, code = {
+                        expect_equal(object = nrow(a),
+                                     expected = 0)
+    })
+  }
 }
 le_tester(df = dfx,
           later_tstp = 30,
           earlier_tstp = 20)
-a <- dfx %>%
-  mutate_(result = time_length(("GEWTSTP30" - "GEWTSTP20"),
-                              "seconds") - "GEW2030L") %>%
-  filter(result != 0)
-test_that(desc = "2030L", code = {
-  expect_equal(object = nrow(a),
-               expected = 0)
-})
+le_tester(df = dfx,
+          later_tstp = 40,
+          earlier_tstp = 30)
+le_tester(df = dfx,
+          later_tstp = 75,
+          earlier_tstp = 65)
+le_tester(df = dfx,
+          later_tstp = 80,
+          earlier_tstp = 70)
+le_tester(df = dfx,
+          later_tstp = 90,
+          earlier_tstp = 80)
+le_tester(df = dfx,
+          later_tstp = 80,
+          earlier_tstp = 20)
 ```
 
 ```{r TE_checks}
