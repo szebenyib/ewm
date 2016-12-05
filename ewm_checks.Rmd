@@ -186,10 +186,44 @@ te_calcs <- dfx %>%
          calc7575T = maxGEWTSTP75 - minGEWTSTP75)
 dfx <- left_join(dfx, te_calcs,
                  by = "G0WM_TU_N")
-# test_that(desc = "2030L", code = {
-#   expect_equal(object = nrow(a),
-#                expected = 0)
-# })
+
+te_tester <- function(df, later_tstp, earlier_tstp) {
+  calc_tstp_name <- as.name(paste("calc",
+                           earlier_tstp,
+                           later_tstp,
+                           "T",
+                           sep = ""))
+  result_name_abap <- as.name(paste("GEW",
+                       earlier_tstp,
+                       later_tstp,
+                       "T",
+                       sep = ""))
+  result_name_r <- paste(earlier_tstp,
+                         later_tstp,
+                         "T",
+                         sep = "")
+  a <- dfx %>%
+    mutate_(result = as.formula(paste("~",
+                                      calc_tstp_name,
+                                      "-",
+                                      result_name_abap,
+                                      sep = ""))) %>%
+    filter(abs(result) > 0.01)
+  test_that(desc = calc_tstp_name, code = {
+    expect_equal(object = nrow(a),
+                 expected = 0)
+  })
+}
+
+te_tester(df = dfx,
+          later_tstp = 45,
+          earlier_tstp = 40)
+te_tester(df = dfx,
+          later_tstp = 65,
+          earlier_tstp = 65)
+te_tester(df = dfx,
+          later_tstp = 75,
+          earlier_tstp = 75)
 ```
 
 
