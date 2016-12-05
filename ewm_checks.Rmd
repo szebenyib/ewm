@@ -111,9 +111,43 @@ dfx <- df %>%
 ```
 
 ```{r LE_checks}
+le_tester <- function(df, later_tstp, earlier_tstp) {
+  later_tstp_name <- as.name(paste("GEWTSTP",
+                           later_tstp,
+                           sep = ""))
+  earlier_tstp_name <- as.name(paste("GEWTSTP",
+                             earlier_tstp,
+                             sep = ""))
+  result_name_abap <- as.name(paste("GEW",
+                       earlier_tstp,
+                       later_tstp,
+                       "L",
+                       sep = ""))
+  result_name_r <- paste(earlier_tstp,
+                         later_tstp,
+                         "L",
+                         sep = "")
+  # mutate_call <- lazyeval::interp(~ )
+  a <- df %>%
+    mutate_(result = paste(later_tstp_name,
+                           "-",
+                           earlier_tstp_name,
+                           sep = "")) %>%
+    # mutate_(result = time_length((later_tstp_name - earlier_tstp_name),
+    #                             "seconds") - result_name_abap) %>%
+    filter(result != 0)
+  test_that(desc = result_name_r, code = {
+    expect_equal(object = nrow(a),
+                 expected = 0)
+  })
+  remove(a)
+}
+le_tester(df = dfx,
+          later_tstp = 30,
+          earlier_tstp = 20)
 a <- dfx %>%
-  mutate(result = time_length((GEWTSTP30 - GEWTSTP20),
-                              "seconds") - GEW2030L) %>%
+  mutate_(result = time_length(("GEWTSTP30" - "GEWTSTP20"),
+                              "seconds") - "GEW2030L") %>%
   filter(result != 0)
 test_that(desc = "2030L", code = {
   expect_equal(object = nrow(a),
