@@ -308,6 +308,28 @@ get_result_rows <- function(source_rows) {
 }
 ```
 
+Checking that the mapping via TE (G0WM_TU_N) is the same as the mapping via in_out values of the transformation logger. **This way the logger can be checked to be working well.** There might be some records which do not have a TE yet, these have to be filtered out from the check, these are in the state before they could have received that state.
+
+```{r checking_in_out_mapping_via_TE}
+source_rows <- source_df %>%
+  filter(!is.na(G0WM_TU_N))
+
+result_rows_via_mapping <- get_result_rows(source_rows)
+
+result_rows_via_g0wm_tu_n <- result_df %>%
+  filter(G0WM_TU_N %in% source_rows$G0WM_TU_N)
+
+test_that(desc = "G0WM_TU_N mapping is the same as the logger mapping",
+          code = {
+            expect_true(nrow(result_rows_via_mapping) ==
+                        nrow(result_rows_via_g0wm_tu_n))
+          })
+rm("source_rows",
+   "result_rows",
+   "result_rows_via_mapping",
+   "result_rows_via_g0wm_tu_n")
+```
+
 KPI3 has to be generated only, as tstp20 and tstp30 are the only present values. This is the case for rows where there is not LE given (no G0WM_TU_N). The identification is therefore possible only via in-out mapping of the transformation logger. In such a case only one record should be found in the result row, that is to be checked as well.
 
 ```{r single_kpi}
