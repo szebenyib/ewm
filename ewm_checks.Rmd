@@ -293,3 +293,39 @@ source_df <- source_df %>%
 # There will be warnings, since empty values cannot
 # be parsed. Those will become NAs, which is ok.
 ```
+
+## Check that relevant KPIs are generated.
+
+```{r result_row_fetcher}
+get_result_rows <- function(source_rows) {
+  in_out_rows <- in_out_df %>%
+    filter(INRECORD %in% source_rows$INDEX)
+
+  result_rows <- result_df %>%
+    filter(INDEX %in% in_out_rows$OUTRECORD)
+  
+  return(result_rows)
+}
+```
+
+KPI3 has to be generated only, as tstp20 and tstp30 are the only present values. This is the case for rows where there is not LE given (no G0WM_TU_N). The identification is therefore possible only via in-out mapping of the transformation logger. In such a case only one record should be found in the result row, that is to be checked as well.
+
+```{r single_kpi}
+source_rows <- source_df %>%
+  filter(!is.na(GEWTSTP20) &
+        !is.na(GEWTSTP30) &
+        is.na(GEWSTAT40))
+
+result_rows <- get_result_rows(source_rows)
+
+test_that(desc = "Only one result is created for records with max GEWTSTP30",
+          code = {
+            expect_true(nrow(source_rows) == nrow(result_rows))
+          })
+
+test_that(desc = "Only KPI3 got generated and nothing else for records with max GEWTSTP30",
+          code = {
+            expect_true(all(result_rows$GEWKPI == "KPI3"))
+          })
+```
+
