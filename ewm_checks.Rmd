@@ -36,52 +36,9 @@ df <- tbl_df(df)
 ```
 
 ```{r}
-df <- df %>% 
-  rename(GEWHUGUID = X.BIC.GEWHUGUID) %>%
-  rename(GEWPWAGEN = X.BIC.GEWPWAGEN) %>%
-  rename(G0WM_TU_N = X.BIC.G0WM_TU_N) %>%
-  rename(GEWVBELN = X.BIC.GEWVBELN) %>%
-  rename(GEWTSTP00 = X.BIC.GEWTSTP00) %>%
-  rename(GEWTSTP10 = X.BIC.GEWTSTP10) %>%
-  rename(GEWTSTP20 = X.BIC.GEWTSTP20) %>%
-  rename(GEWTSTP30 = X.BIC.GEWTSTP30) %>%
-  rename(GEWTSTP40 = X.BIC.GEWTSTP40) %>%
-  rename(GEWTSTP45 = X.BIC.GEWTSTP45) %>%
-  rename(GEWTSTP50 = X.BIC.GEWTSTP50) %>%
-  rename(GEWTSTP60 = X.BIC.GEWTSTP60) %>%
-  rename(GEWTSTP65 = X.BIC.GEWTSTP65) %>%
-  rename(GEWTSTP70 = X.BIC.GEWTSTP70) %>%
-  rename(GEWTSTP75 = X.BIC.GEWTSTP75) %>%
-  rename(GEWTSTP80 = X.BIC.GEWTSTP80) %>%
-  rename(GEWTSTP90 = X.BIC.GEWTSTP90) %>%
-  rename(GEWTSTP95 = X.BIC.GEWTSTP95) %>%
-  rename(GEWSTAT10 = X.BIC.GEWSTAT10) %>%
-  rename(GEWSTAT15 = X.BIC.GEWSTAT15) %>%
-  rename(GEWSTAT20 = X.BIC.GEWSTAT20) %>%
-  rename(GEWSTAT30 = X.BIC.GEWSTAT30) %>%
-  rename(GEWSTAT40 = X.BIC.GEWSTAT40) %>%
-  rename(GEWSTAT45 = X.BIC.GEWSTAT45) %>%
-  rename(GEWSTAT50 = X.BIC.GEWSTAT50) %>%
-  rename(GEWSTAT60 = X.BIC.GEWSTAT60) %>%
-  rename(GEWSTAT65 = X.BIC.GEWSTAT65) %>%
-  rename(GEWSTAT70 = X.BIC.GEWSTAT70) %>%
-  rename(GEWSTAT75 = X.BIC.GEWSTAT75) %>%
-  rename(GEWSTAT80 = X.BIC.GEWSTAT80) %>%
-  rename(GEWSTAT90 = X.BIC.GEWSTAT90) %>%
-  rename(GEWSTAT95 = X.BIC.GEWSTAT95) %>%
-  rename(GEWSTAT99 = X.BIC.GEWSTAT99) %>%
-  rename(GEWSTATTL = X.BIC.GEWSTATTL) %>%
-  rename(GEWLSTAT = X.BIC.GEWLSTAT) %>%
-  rename(GEWTSTPUP = X.BIC.GEWTSTPUP) %>%
-  rename(GEW2030L = X.BIC.GEW2030L) %>%
-  rename(GEW3040L = X.BIC.GEW3040L) %>%
-  rename(GEW4045T = X.BIC.GEW4045T) %>%
-  rename(GEW6565T = X.BIC.GEW6565T) %>%
-  rename(GEW6575L = X.BIC.GEW6575L) %>%
-  rename(GEW7080L = X.BIC.GEW7080L) %>%
-  rename(GEW7575T = X.BIC.GEW7575T) %>%
-  rename(GEW8090L = X.BIC.GEW8090L) %>%
-  rename(GEW2080L = X.BIC.GEW2080L)
+colnames(df) <- gsub("X.BIC.",
+                     "",
+                     colnames(df))
 df <- df %>%
   mutate(GEWTSTP00 = ymd_hms(GEWTSTP00)) %>%
   mutate(GEWTSTP10 = ymd_hms(GEWTSTP10)) %>%
