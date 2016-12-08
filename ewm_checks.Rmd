@@ -35,28 +35,26 @@ df <- read.csv(file = paste(PROJECT_DIR,
 df <- tbl_df(df)
 ```
 
-```{r}
+```{r column_name_fix}
 colnames(df) <- gsub("X.BIC.",
                      "",
                      colnames(df))
-df <- df %>%
-  mutate(GEWTSTP00 = ymd_hms(GEWTSTP00)) %>%
-  mutate(GEWTSTP10 = ymd_hms(GEWTSTP10)) %>%
-  mutate(GEWTSTP20 = ymd_hms(GEWTSTP20)) %>%
-  mutate(GEWTSTP30 = ymd_hms(GEWTSTP30)) %>%
-  mutate(GEWTSTP40 = ymd_hms(GEWTSTP40)) %>%
-  mutate(GEWTSTP45 = ymd_hms(GEWTSTP45)) %>%
-  mutate(GEWTSTP50 = ymd_hms(GEWTSTP50)) %>%
-  mutate(GEWTSTP60 = ymd_hms(GEWTSTP60)) %>%
-  mutate(GEWTSTP65 = ymd_hms(GEWTSTP65)) %>%
-  mutate(GEWTSTP70 = ymd_hms(GEWTSTP70)) %>%
-  mutate(GEWTSTP75 = ymd_hms(GEWTSTP75)) %>%
-  mutate(GEWTSTP80 = ymd_hms(GEWTSTP80)) %>%
-  mutate(GEWTSTP90 = ymd_hms(GEWTSTP90)) %>%
-  mutate(GEWTSTP95 = ymd_hms(GEWTSTP95)) %>%
-  mutate(GEWTSTPUP = ymd_hms(GEWTSTPUP))
+```
+
+```{r timestamp_conversion}
+colnames_to_ymd_convert <- grep("GEWTSTP",
+                                colnames(df),
+                                value = TRUE)
+df <-df %>%
+  mutate_each_(funs(ymd_hms),
+               vars = colnames_to_ymd_convert)
 # There will be warnings, since empty values cannot
 # be parsed. Those will become NAs, which is ok.
+colnames_gewstat <- grep("GEWSTAT",
+                         colnames(df),
+                         value = TRUE)
+
+  
 ```
 
 ```{r LE_checks}
