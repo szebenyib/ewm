@@ -444,4 +444,26 @@ bic_pgewkpi <- bic_pgewkpi %>%
 kpi_gen <- left_join(x = kpi_gen,
                      y = bic_pgewkpi,
                      by = "to_become_KPI_columns")
+
+count_KPI <- function(KPI) {
+  a <- result_df %>%
+   filter(GEWKPI == KPI)
+  return(nrow(a))
+}
+
+a <- unlist(lapply(X = kpi_gen$GEWKPI,
+            FUN = count_KPI))
+
+kpi_gen <- kpi_gen %>%
+  mutate(KPIs_actually_generated = a)
+
+test_that(desc = "KPI generation numbers per KPI matches with expectations",
+          code = {
+            expect_equal(object = kpi_gen$KPIs_actually_generated,
+                         expected =  kpi_gen$KPIs_to_be_generated)
+          })
+
+rm("a")
+
+
 ```
