@@ -250,7 +250,7 @@ write.csv(x = dfx,
 
 ## GH_EW_B02
 
-```{r read_data}
+```{r read_data2}
 source_df <- read.csv(file = paste(PROJECT_DIR,
                      "source_package_gh_ew_b02.csv",
                      sep=""),
@@ -272,6 +272,14 @@ in_out_df <- read.csv(file = paste(PROJECT_DIR,
                sep = ",",
                dec = ",")
 in_out_df <- tbl_df(in_out_df)
+bic_pgewkpi <- read.csv(file = paste(PROJECT_DIR,
+                       "bic_pgewkpi.csv",
+                       sep=""),
+               header = TRUE,
+               sep = ",",
+               dec = ",",
+               stringsAsFactors = FALSE)
+bic_pgewkpi <- tbl_df(bic_pgewkpi)
 ```
 
 ```{r column_name_fix_2}
@@ -281,6 +289,9 @@ colnames(source_df) <- gsub("X.BIC.",
 colnames(result_df) <- gsub("X.BIC.",
                             "",
                             colnames(result_df))
+colnames(bic_pgewkpi) <- gsub("X.BIC.",
+                              "",
+                              colnames(bic_pgewkpi))
 ```
 
 ```{r timestamp_conversion_2}
@@ -382,7 +393,7 @@ rm("source_rows",
    "result_rows")
 ```
 
-Check that the necessary amount of KPIs got generated.
+Check that exactly the necessary amount of KPIs got generated globally.
 
 ```{r KPI_number_check}
 count_non_zero <- function(colname) {
@@ -416,5 +427,21 @@ test_that(desc = paste("The number of KPIs to be generated equals",
                         nrow(result_df))
           })
 ```
-The necessary KPIs as well.
-Check that no more has been generated than necessary.
+
+Check that the necessary amount has been generated per KPI.
+
+```{r KPI_number_check_2}
+bic_pgewkpi <- bic_pgewkpi %>%
+  mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
+                                        GEWKPITYP == "TE",
+                                        yes = paste("GEW",
+                                                     substr(bic_pgewkpi$GEWVONST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWBISST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWKPITYP, 1, 1),
+                                                     sep = ""),
+                                        no = NA)) %>%
+  filter(OBJVERS == "A" & GEWKPI != "")
+kpi_gen <- left_join(x = kpi_gen,
+                     y = bic_pgewkpi,
+                     by = "to_become_KPI_columns")
+```
