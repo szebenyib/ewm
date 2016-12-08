@@ -102,14 +102,6 @@ df <- df %>%
 # be parsed. Those will become NAs, which is ok.
 ```
 
-Keep only the values where we have a TE
-
-```{r}
-dfx <- df %>% 
-  filter(!is.na(G0WM_TU_N)) %>%
-  arrange(G0WM_TU_N)
-```
-
 ```{r LE_checks}
 le_tester <- function(df, later_tstp, earlier_tstp) {
   later_tstp_name <- as.name(paste("GEWTSTP",
@@ -172,6 +164,14 @@ le_tester(df = dfx,
 ```
 
 In case of TE calculations if min is to be calculated but there are NAs present in the records, then the minimum will not be calculated. If the minimum is not calculated, then the difference is also NA. Comparing 0s from SAP and NAs from R (0 - NA) will result in NAs and those are not selected by the dplyr filter statement.
+
+Keep only the values where we have a TE
+
+```{r}
+dfx <- df %>% 
+  filter(!is.na(G0WM_TU_N)) %>%
+  arrange(G0WM_TU_N)
+```
 
 ```{r TE_checks}
 te_calcs <- dfx %>%
