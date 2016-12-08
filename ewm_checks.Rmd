@@ -410,12 +410,27 @@ kpi_gen <- as.data.frame(to_become_KPI_columns,
                          stringsAsFactors = FALSE)
 kpi_gen <- cbind(kpi_gen, KPIs_to_be_generated)
 
+bic_pgewkpi <- bic_pgewkpi %>%
+  mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
+                                        GEWKPITYP == "TE",
+                                        yes = paste("GEW",
+                                                     substr(bic_pgewkpi$GEWVONST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWBISST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWKPITYP, 1, 1),
+                                                     sep = ""),
+                                        no = NA)) %>%
+  filter(OBJVERS == "A" & GEWKPI != "")
+kpi_gen <- left_join(x = kpi_gen,
+                     y = bic_pgewkpi,
+                     by = "to_become_KPI_columns")
+
 # Adding special case GEWSTAT65, KPI51
 source_rows <- source_df %>%
   filter(!is.na(GEWSTAT65))
 
 kpi_gen <- rbind(kpi_gen,
-                 c("", nrow(source_rows)))
+                 c("", nrow(source_rows), "KPI51",
+                   "", "", "", "", ""))
 
 kpi_gen$KPIs_to_be_generated = as.numeric(kpi_gen$KPIs_to_be_generated)
 
@@ -431,20 +446,6 @@ test_that(desc = paste("The number of KPIs to be generated equals",
 Check that the necessary amount has been generated per KPI.
 
 ```{r KPI_number_check_2}
-bic_pgewkpi <- bic_pgewkpi %>%
-  mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
-                                        GEWKPITYP == "TE",
-                                        yes = paste("GEW",
-                                                     substr(bic_pgewkpi$GEWVONST, 13, 14),
-                                                     substr(bic_pgewkpi$GEWBISST, 13, 14),
-                                                     substr(bic_pgewkpi$GEWKPITYP, 1, 1),
-                                                     sep = ""),
-                                        no = NA)) %>%
-  filter(OBJVERS == "A" & GEWKPI != "")
-kpi_gen <- left_join(x = kpi_gen,
-                     y = bic_pgewkpi,
-                     by = "to_become_KPI_columns")
-
 count_KPI <- function(KPI) {
   a <- result_df %>%
    filter(GEWKPI == KPI)
@@ -462,8 +463,5 @@ test_that(desc = "KPI generation numbers per KPI matches with expectations",
             expect_equal(object = kpi_gen$KPIs_actually_generated,
                          expected =  kpi_gen$KPIs_to_be_generated)
           })
-
 rm("a")
-
-
 ```
