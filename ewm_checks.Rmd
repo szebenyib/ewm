@@ -265,6 +265,13 @@ result_df <- read.csv(file = paste(PROJECT_DIR,
                sep = ",",
                dec = ",")
 result_df <- tbl_df(result_df)
+in_out_df <- read.csv(file = paste(PROJECT_DIR,
+                     "records_in_out_gh_ew_b02.csv",
+                     sep=""),
+               header = TRUE,
+               sep = ",",
+               dec = ",")
+in_out_df <- tbl_df(in_out_df)
 ```
 
 ```{r column_name_fix_2}
