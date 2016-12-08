@@ -233,3 +233,28 @@ te_tester(df = dfx,
 write.csv(x = dfx,
           file = "dfx.csv")
 ```
+
+## GH_EW_B02
+
+```{r read_data}
+df <- read.csv(file = paste(PROJECT_DIR,
+                     "result_package_gh_ew_b02.csv",
+                     sep=""),
+               header = TRUE,
+               sep = ",",
+               dec = ",")
+df <- tbl_df(df)
+```
+
+```{r fix_data}
+df <- df %>%
+  rename(G0WM_TU_N = X.BIC.G0WM_TU_N) %>%
+  rename(GEWSTAT65 = X.BIC.GEWSTAT65) %>%
+  rename(GEWLSTAT = X.BIC.GEWLSTAT) %>%
+  rename(GEWVOND = X.BIC.GEWVOND) %>%
+  rename(GEWVONZ = X.BIC.GEWVONZ) %>%
+  rename(GEWBISD = X.BIC.GEWBISD) %>%
+  rename(GEWBISZ = X.BIC.GEWBISZ) %>%
+  rename(GEWZEITD = X.BIC.GEWZEITD) %>%
+  rename(GEWKPI = X.BIC.GEWKPI)
+```
