@@ -349,5 +349,38 @@ test_that(desc = "Only KPI3 got generated and nothing else for records with max 
           code = {
             expect_true(all(result_rows$GEWKPI == "KPI3"))
           })
+rm("source_rows",
+   "result_rows")
 ```
 
+Checking that if KPI4 is present then KPI3 is present as well. Besides checking that if KPI4 is present then TE (G0WM_TU_N) is not empty.
+
+```{r KPI3_KPI4}
+source_rows <- source_df %>%
+  filter(!is.na(GEWTSTP40))
+
+result_rows <- get_result_rows(source_rows)
+
+test_that(desc = "KPI3 is present if KPI4 exists",
+          code = {
+            a <- result_rows %>%
+              filter(GEWKPI == "KPI3")
+            b <- result_rows %>%
+              filter(GEWKPI == "KPI4")
+            expect_true(nrow(a) == nrow(b))
+          })
+
+test_that(desc = "TE (G0WM_TU_N) is not empty if KPI4 is present",
+          code = {
+            a <- result_rows %>%
+              filter(GEWKPI == "KPI4" &
+                    is.na(G0WM_TU_N))
+            expect_true(nrow(a) == 0)
+          })
+
+rm("source_rows",
+   "result_rows")
+```
+
+Check that the necessary amount of KPIs got generated. The necessary KPIs as well.
+Check that no more has been generated than necessary.
