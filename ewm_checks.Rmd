@@ -35,13 +35,13 @@ df <- read.csv(file = paste(PROJECT_DIR,
 df <- tbl_df(df)
 ```
 
-```{r column_name_fix}
+```{r column_name_fix_1}
 colnames(df) <- gsub("X.BIC.",
                      "",
                      colnames(df))
 ```
 
-```{r timestamp_conversion}
+```{r timestamp_conversion_1}
 colnames_to_ymd_convert <- grep("GEWTSTP",
                                 colnames(df),
                                 value = TRUE)
@@ -50,11 +50,70 @@ df <-df %>%
                vars = colnames_to_ymd_convert)
 # There will be warnings, since empty values cannot
 # be parsed. Those will become NAs, which is ok.
-colnames_gewstat <- grep("GEWSTAT",
-                         colnames(df),
-                         value = TRUE)
+```
 
-  
+Checking which stat and tstp columns have their respective counterparts in gewtstp gewstat respectively.
+
+```{r tstp_stat_checks}
+colnames_gewstat_check <- grep("GEWSTAT",
+                               colnames(df),
+                               value = TRUE)
+colnames_gewtstp_check <- grep("GEWTSTP",
+                                colnames(df),
+                                value = TRUE)
+check_if_contained <- function(source, target_list) {
+  # Comparing the numbers
+  checker_list <- grepl(substr(source, 8, 10),
+                        target_list)
+  return(any(checker_list))
+}
+check_in_gewstat <- function(source) {
+  return(check_if_contained(source,
+                            colnames_gewstat_check))
+}
+check_in_gewtstp <- function(source) {
+  return(check_if_contained(source,
+                            colnames_gewtstp_check))
+}
+gewstats_in_gewtstp <- unlist(lapply(X = colnames_gewstat_check,
+                                     FUN = check_in_gewtstp))
+gewtstps_in_gewstat <- unlist(lapply(X = colnames_gewtstp_check,
+                                     FUN = check_in_gewstat))
+colnames_gewstat_check <- colnames_gewstat_check[gewstats_in_gewtstp]
+colnames_gewtstp_check <- colnames_gewtstp_check[gewtstps_in_gewstat]
+```
+
+Checking that if there are values in the stat columns then the time stamps are not empty.
+
+```{r tstp_stat_content_check}
+
+stat_tstp_checker <- function(df, stat, tstp) {
+  # If there is a stat value but NA in the timestamp field,
+  # then it is a wrong row.
+  wrong_rows_df <- df %>%
+    filter_(as.formula(paste("~!is.na(",
+                             as.name(stat),
+                             ") & is.na(",
+                             as.name(tstp),
+                             ")",
+                             sep = "")))
+      # !is.na(as.name(stat)) & is.na(as.name(tstp)))
+  return(wrong_rows_df)
+}
+
+for(i in 1:length(colnames_gewtstp_check)) {
+  wrong_rows_df <- stat_tstp_checker(df,
+                        colnames_gewstat_check[i],
+                        colnames_gewtstp_check[i])
+  test_that(desc = paste(i,
+                         " - ",
+                         colnames_gewtstp_check[i],
+                         paste = ""),
+            code = {expect_equal(object = nrow(wrong_rows_df),
+                                     expected = 0)
+    })
+}
+# If there are no errors all is good.
 ```
 
 ```{r LE_checks}
@@ -208,11 +267,22 @@ result_df <- read.csv(file = paste(PROJECT_DIR,
 result_df <- tbl_df(result_df)
 ```
 
-```{r fix_colnames}
+```{r column_name_fix_2}
 colnames(source_df) <- gsub("X.BIC.",
                             "",
                             colnames(source_df))
 colnames(result_df) <- gsub("X.BIC.",
                             "",
                             colnames(result_df))
+```
+
+```{r timestamp_conversion_2}
+colnames_to_ymd_convert <- grep("GEWTSTP",
+                                colnames(source_df),
+                                value = TRUE)
+source_df <- source_df %>%
+  mutate_each_(funs(ymd_hms),
+               vars = colnames_to_ymd_convert)
+# There will be warnings, since empty values cannot
+# be parsed. Those will become NAs, which is ok.
 ```
