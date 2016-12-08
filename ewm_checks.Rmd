@@ -382,5 +382,39 @@ rm("source_rows",
    "result_rows")
 ```
 
-Check that the necessary amount of KPIs got generated. The necessary KPIs as well.
+Check that the necessary amount of KPIs got generated.
+
+```{r KPI_number_check}
+count_non_zero <- function(colname) {
+  return(sum(source_df[colname] != 0))
+}
+
+to_become_KPI_columns <- grep(pattern = "^GEW[0-9]{4}[LT]$",
+                              x = colnames(source_df),
+                              value = TRUE)
+KPIs_to_be_generated <- unlist(lapply(X = to_become_KPI_columns,
+       FUN = count_non_zero))
+
+kpi_gen <- as.data.frame(to_become_KPI_columns,
+                         stringsAsFactors = FALSE)
+kpi_gen <- cbind(kpi_gen, KPIs_to_be_generated)
+
+# Adding special case GEWSTAT65, KPI51
+source_rows <- source_df %>%
+  filter(!is.na(GEWSTAT65))
+
+kpi_gen <- rbind(kpi_gen,
+                 c("", nrow(source_rows)))
+
+kpi_gen$KPIs_to_be_generated = as.numeric(kpi_gen$KPIs_to_be_generated)
+
+test_that(desc = paste("The number of KPIs to be generated equals",
+                       "to the number of rows in the result package",
+                       sep = ""),
+          code = {
+            expect_true(sum(kpi_gen$KPIs_to_be_generated) ==
+                        nrow(result_df))
+          })
+```
+The necessary KPIs as well.
 Check that no more has been generated than necessary.
