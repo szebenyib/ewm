@@ -157,22 +157,22 @@ le_tester <- function(df, later_tstp, earlier_tstp) {
     })
   }
 }
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 30,
           earlier_tstp = 20)
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 40,
           earlier_tstp = 30)
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 75,
           earlier_tstp = 65)
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 80,
           earlier_tstp = 70)
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 90,
           earlier_tstp = 80)
-le_tester(df = dfx,
+le_tester(df = df,
           later_tstp = 80,
           earlier_tstp = 20)
 ```
@@ -336,7 +336,6 @@ test_that(desc = "G0WM_TU_N mapping is the same as the logger mapping",
                         nrow(result_rows_via_g0wm_tu_n))
           })
 rm("source_rows",
-   "result_rows",
    "result_rows_via_mapping",
    "result_rows_via_g0wm_tu_n")
 ```
