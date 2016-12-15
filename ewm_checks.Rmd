@@ -42,7 +42,7 @@ colnames(df) <- gsub("X.BIC.",
 ```
 
 ```{r timestamp_conversion_1}
-colnames_to_ymd_convert <- grep("GEWTSTP",
+colnames_to_ymd_convert <- grep("GEWTST",
                                 colnames(df),
                                 value = TRUE)
 df <-df %>%
@@ -242,6 +242,32 @@ te_tester(df = dfx,
           earlier_tstp = 75)
 ```
 
+```{r TE check that relevant GEWTSTXXL gets filled}
+te_gewtstxxl_tester <- function(df, later_tstp) {
+  last_name_r <- paste("maxGEWTSTP",
+                       later_tstp,
+                       sep = "")
+  last_name_abap <- as.name(paste("GEWTST",
+                          later_tstp,
+                          "L",
+                          sep = ""))
+  a <- df %>% mutate_(result = as.formula(paste("~",
+                                                last_name_r,
+                                                "-",
+                                                last_name_abap))) %>%
+              filter(abs(result) > 0)
+  test_that(desc = "The relevant gewtstXXl last time stamps are filled for TE calcs later",
+            code = expect_equal(object = nrow(a),
+                                expected = 0))
+}
+
+te_gewtstxxl_tester(df = dfx,
+                    later_tstp = 45)
+te_gewtstxxl_tester(df = dfx,
+                    later_tstp = 65)
+te_gewtstxxl_tester(df = dfx,
+                    later_tstp = 75)
+```
 
 ```{r export}
 write.csv(x = dfx,
