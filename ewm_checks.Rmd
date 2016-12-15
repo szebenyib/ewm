@@ -21,6 +21,7 @@ options(java.parameters = "-Xmx4096m")
 library(dplyr)
 library(testthat)
 library(lubridate)
+library(stringr)
 ```
 
 ## GH_EW_01
@@ -45,6 +46,7 @@ colnames(df) <- gsub("X.BIC.",
 colnames_to_ymd_convert <- grep("GEWTST",
                                 colnames(df),
                                 value = TRUE)
+
 df <-df %>%
   mutate_each_(funs(ymd_hms),
                vars = colnames_to_ymd_convert)
@@ -202,6 +204,7 @@ te_calcs <- dfx %>%
          calc7575T = maxGEWTSTP75 - minGEWTSTP75)
 dfx <- left_join(dfx, te_calcs,
                  by = "G0WM_TU_N")
+rm("te_calcs")
 
 te_tester <- function(df, later_tstp, earlier_tstp) {
   calc_tstp_name <- as.name(paste("calc",
@@ -282,14 +285,16 @@ source_df <- read.csv(file = paste(PROJECT_DIR,
                      sep=""),
                header = TRUE,
                sep = ",",
-               dec = ",")
+               dec = ",",
+               stringsAsFactors = FALSE)
 source_df <- tbl_df(source_df)
 result_df <- read.csv(file = paste(PROJECT_DIR,
                      "result_package_gh_ew_b02.csv",
                      sep=""),
                header = TRUE,
                sep = ",",
-               dec = ",")
+               dec = ",",
+               stringsAsFactors = FALSE)
 result_df <- tbl_df(result_df)
 in_out_df <- read.csv(file = paste(PROJECT_DIR,
                      "records_in_out_gh_ew_b02.csv",
@@ -324,8 +329,14 @@ colnames(bic_pgewkpi) <- gsub("X.BIC.",
 colnames_to_ymd_convert <- grep("GEWTSTP",
                                 colnames(source_df),
                                 value = TRUE)
+
 source_df <- source_df %>%
   mutate_each_(funs(ymd_hms),
+               vars = colnames_to_ymd_convert)
+
+colnames_to_ymd_convert <- c("CALDAY")
+result_df <- result_df %>%
+  mutate_each_(funs(ymd),
                vars = colnames_to_ymd_convert)
 # There will be warnings, since empty values cannot
 # be parsed. Those will become NAs, which is ok.
@@ -489,4 +500,76 @@ test_that(desc = "KPI generation numbers per KPI matches with expectations",
                          expected =  kpi_gen$KPIs_to_be_generated)
           })
 rm("a")
+```
+
+```{r check that caldays are generated from the right source}
+LE_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "LE")
+TE_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "TE")
+
+a <- result_df %>%
+  filter(GEWKPI %in% LE_KPIs$GEWKPI) %>%
+  filter(GEWBISD != CALDAY)
+
+test_that(desc = "All LE KPIS have the same calday as the bisdatum",
+          code = expect_equal(nrow(a),
+                              object = 0))
+
+a <- result_df %>%
+  filter(GEWKPI %in% TE_KPIs$GEWKPI)
+a <-left_join(x = a,
+              y = in_out_df,
+              by = c("INDEX" = "OUTRECORD")) %>%
+    select(-INDEX.y)
+a <- left_join(x = a,
+               y = source_df,
+               by = c("INRECORD" = "INDEX")) %>%
+    select(-RECORD.y)
+a <- left_join(x = a,
+               y = bic_pgewkpi,
+               by = "GEWKPI")
+
+
+a <- a %>% mutate(to_become_last = paste("GEWTST",
+                                         substr(x = GEWBISST,
+                                               start = 13,
+                                               stop = 14),
+                                         "L",
+                                         sep = ""))
+colnames_to_ymd_convert <- grep("^GEWTST[0-9]{2}L$",
+                                colnames(source_df),
+                                value = TRUE)
+
+a <- a %>%
+  mutate_each_(funs(ymd_hms),
+               vars = colnames_to_ymd_convert) %>%
+  mutate_each_(funs(date),
+               vars = colnames_to_ymd_convert)
+#Warnings about X failed to parse are OK.
+
+calc_tst_delta <- function(row) {
+  col_to_lookup <- row["to_become_last"][[1]]
+  as.numeric(difftime(row["CALDAY.x"],
+                      row[col_to_lookup]))
+}
+deltas <- apply(X = a,
+                 MARGIN = 1,
+                 FUN = calc_tst_delta)
+#Some deltas are possible due to UTC vs Budapest, checking
+#that this is indeed the case
+a_where_delta_bigger_0 <- a[deltas > 0, ]
+a_relevant_gewtstp45 <- a %>%
+  filter(INDEX %in% a_where_delta_bigger_0$INDEX) %>%
+  select(GEWTSTP45)
+#Timestamps are stored 
+a_relevant_gewtstp45_recalc_budapest <- with_tz(a_relevant_gewtstp45,
+                                                tzone="Europe/Budapest")
+within_an_hour_after_midnight <- sum(hour(a_relevant_gewtstp45_recalc_budapest$GEWTSTP45) + 1)
+test_that(desc = paste("The difference between the relevant GEWTSTXXL field",
+                       "and the calday is not zero everywhere and not because of",
+                       "timezone difference"),
+          code = expect_equal(sum(deltas) - within_an_hour_after_midnight, 0))
+
+  
 ```
