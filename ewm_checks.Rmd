@@ -30,6 +30,51 @@ library(stringr)
 
 If this document could be generated, then all tests have passed.
 
+# Global
+
+## Global functions
+```{r global_function_definitions}
+strip_bic <- function(name) {
+  substr(x = name,
+         start = 6,
+         stop = nchar(name))
+}
+```
+
+## Input reading of /bic/pgewkpi
+```{r read_bic_pgewkpi}
+bic_pgewkpi <- read.csv(file = paste(PROJECT_DIR,
+                       "bic_pgewkpi.csv",
+                       sep=""),
+               header = TRUE,
+               sep = ",",
+               dec = ",",
+               stringsAsFactors = FALSE)
+bic_pgewkpi <- tbl_df(bic_pgewkpi)
+
+colnames(bic_pgewkpi) <- gsub("X.BIC.",
+                              "",
+                              colnames(bic_pgewkpi))
+```
+
+Determining KPI columns
+```{r pgewkpi_determine_kpi_columns}
+bic_pgewkpi <- bic_pgewkpi %>%
+  mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
+                                        GEWKPITYP == "TE" ,
+                                        yes = paste("GEW",
+                                                     substr(bic_pgewkpi$GEWVONST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWBISST, 13, 14),
+                                                     substr(bic_pgewkpi$GEWKPITYP, 1, 1),
+                                                     sep = ""),
+                                        no = ifelse(GEWKPITYP == "ST",
+                                                    yes = strip_bic(GEWSTAT),
+                                                    no = NA)
+                                        )
+         ) %>%
+  filter(OBJVERS == "A" & GEWKPI != "")
+```
+
 # GH_EW_01
 
 ## Input reading
@@ -331,14 +376,6 @@ in_out_df <- read.csv(file = paste(PROJECT_DIR,
                sep = ",",
                dec = ",")
 in_out_df <- tbl_df(in_out_df)
-bic_pgewkpi <- read.csv(file = paste(PROJECT_DIR,
-                       "bic_pgewkpi.csv",
-                       sep=""),
-               header = TRUE,
-               sep = ",",
-               dec = ",",
-               stringsAsFactors = FALSE)
-bic_pgewkpi <- tbl_df(bic_pgewkpi)
 ```
 
 Removing unnecessary part from column names.
@@ -350,9 +387,6 @@ colnames(source_df) <- gsub("X.BIC.",
 colnames(result_df) <- gsub("X.BIC.",
                             "",
                             colnames(result_df))
-colnames(bic_pgewkpi) <- gsub("X.BIC.",
-                              "",
-                              colnames(bic_pgewkpi))
 ```
 
 Fixing timestamp's format.
@@ -483,11 +517,7 @@ to_become_KPI_columns <- grep(pattern = "^GEW[0-9]{4}[LT]$",
 a <- bic_pgewkpi %>%
   filter(GEWKPITYP == "ST") %>%
   select(GEWSTAT)
-strip_bic <- function(name) {
-  substr(x = name,
-         start = 6,
-         stop = nchar(name))
-}
+
 a <- lapply(X = unlist(a),
        FUN = strip_bic)
 to_become_KPI_columns <- c(to_become_KPI_columns,
@@ -500,20 +530,6 @@ kpi_gen <- as.data.frame(to_become_KPI_columns,
                          stringsAsFactors = FALSE)
 kpi_gen <- cbind(kpi_gen, KPIs_to_be_generated)
 
-bic_pgewkpi <- bic_pgewkpi %>%
-  mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
-                                        GEWKPITYP == "TE" ,
-                                        yes = paste("GEW",
-                                                     substr(bic_pgewkpi$GEWVONST, 13, 14),
-                                                     substr(bic_pgewkpi$GEWBISST, 13, 14),
-                                                     substr(bic_pgewkpi$GEWKPITYP, 1, 1),
-                                                     sep = ""),
-                                        no = ifelse(GEWKPITYP == "ST",
-                                                    yes = strip_bic(GEWSTAT),
-                                                    no = NA)
-                                        )
-         ) %>%
-  filter(OBJVERS == "A" & GEWKPI != "")
 kpi_gen <- left_join(x = kpi_gen,
                      y = bic_pgewkpi,
                      by = "to_become_KPI_columns")
@@ -658,7 +674,6 @@ ds05 <- ds05 %>%
 Keeping only the necessary columns.
 
 ```{r experiment}
-
 df <- ds05 %>%
   arrange(Von.Handling.Unit, Quittierung)
 df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
@@ -672,3 +687,4 @@ df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
    -...VFDA_TS, -X0WM_VLBER, -Welle, -...WAVE_IT, -X0WM_CAPA)
 df <- df %>% select(Von.Handling.Unit, Nach.Handling.Unit, X0WM_MATNR, X0WM_VLTYP, X0WM_NLTYP, Prozess, Quittierung, Queue, Wareneingang, X0WM_WHO, X0WM_TANUM)
 ```
+
