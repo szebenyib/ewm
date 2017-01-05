@@ -75,6 +75,17 @@ bic_pgewkpi <- bic_pgewkpi %>%
   filter(OBJVERS == "A" & GEWKPI != "")
 ```
 
+```{r creating_pre_filtered_kpi_tables_by_kpityp}
+LE_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "LE")
+TE_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "TE")
+ST_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "ST")
+TA_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "TA")
+```
+
 # GH_EW_01
 
 ## Input reading
@@ -576,13 +587,6 @@ Cases:
 * TE KPI -> TE's last bisdatum
 
 ```{r check_that_caldays_are_generated_from_the_right_source}
-LE_KPIs <- bic_pgewkpi %>%
-  filter(GEWKPITYP == "LE")
-TE_KPIs <- bic_pgewkpi %>%
-  filter(GEWKPITYP == "TE")
-ST_KPIs <- bic_pgewkpi %>%
-  filter(GEWKPITYP == "ST")
-
 a <- result_df %>%
   filter(GEWKPI %in% LE_KPIs$GEWKPI) %>%
   filter(GEWBISD != CALDAY)
