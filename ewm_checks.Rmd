@@ -42,12 +42,15 @@ strip_bic <- function(name) {
 ```
 
 ## Input reading of /bic/pgewkpi
+
+The input txt is a tab separated export of the table /bic/pgewkpi.
+
 ```{r read_bic_pgewkpi}
 bic_pgewkpi <- read.csv(file = paste(PROJECT_DIR,
-                       "bic_pgewkpi.csv",
+                       "bic_pgewkpi.txt",
                        sep=""),
                header = TRUE,
-               sep = ",",
+               sep = "\t",
                dec = ",",
                stringsAsFactors = FALSE)
 bic_pgewkpi <- tbl_df(bic_pgewkpi)
@@ -58,6 +61,7 @@ colnames(bic_pgewkpi) <- gsub("X.BIC.",
 ```
 
 Determining KPI columns
+
 ```{r pgewkpi_determine_kpi_columns}
 bic_pgewkpi <- bic_pgewkpi %>%
   mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
@@ -639,7 +643,7 @@ deltas <- apply(X = a,
 #that this is indeed the case
 a_where_delta_bigger_0 <- a[deltas > 0, ]
 a_relevant_gewtstp45 <- a %>%
-  filter(INDEX.x %in% a_where_delta_bigger_0$INDEX.x) %>%
+  filter(INDEX %in% a_where_delta_bigger_0$INDEX) %>%
   select(GEWTSTP45)
 #Timestamps are stored 
 a_relevant_gewtstp45_recalc_budapest <- with_tz(a_relevant_gewtstp45,
@@ -655,6 +659,8 @@ rm("a", "a_relevant_gewtstp45_recalc_budapest",
 ```
 
 # GH_EW_B02 from DS05
+
+**Please note that the DS05 part expects that no earlier loading from DS05 has taken place, no lookup from there is checked here.**
 
 ## Reading data
 
@@ -677,7 +683,7 @@ ds05 <- ds05 %>%
 
 Keeping only the necessary columns.
 
-```{r experiment}
+```{r ds05_pre_processing}
 df <- ds05 %>%
   arrange(Von.Handling.Unit, Quittierung)
 df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
@@ -692,3 +698,9 @@ df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
 df <- df %>% select(Von.Handling.Unit, Nach.Handling.Unit, X0WM_MATNR, X0WM_VLTYP, X0WM_NLTYP, Prozess, Quittierung, Queue, Wareneingang, X0WM_WHO, X0WM_TANUM)
 ```
 
+Checking that only rows remain, which have LGTYP in either the Vonlagertyp or Nachlagertyp.
+
+```{r ds05_filetering_by_lgtyp}
+df <- df %>%
+  filter(Von.Handling.Unit %in% TA_KPIs)
+```
