@@ -433,12 +433,26 @@ Check that exactly the necessary amount of KPIs got generated globally.
 
 ```{r KPI_number_check}
 count_non_zero <- function(colname) {
-  return(sum(source_df[colname] != 0))
+  return(sum(source_df[colname] != 0,
+             na.rm = TRUE))
 }
 
 to_become_KPI_columns <- grep(pattern = "^GEW[0-9]{4}[LT]$",
                               x = colnames(source_df),
                               value = TRUE)
+a <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "ST") %>%
+  select(GEWSTAT)
+strip_bic <- function(name) {
+  substr(x = name,
+         start = 6,
+         stop = nchar(name))
+}
+a <- lapply(X = unlist(a),
+       FUN = strip_bic)
+to_become_KPI_columns <- c(to_become_KPI_columns,
+                           unlist(a))
+
 KPIs_to_be_generated <- unlist(lapply(X = to_become_KPI_columns,
        FUN = count_non_zero))
 
@@ -448,25 +462,29 @@ kpi_gen <- cbind(kpi_gen, KPIs_to_be_generated)
 
 bic_pgewkpi <- bic_pgewkpi %>%
   mutate(to_become_KPI_columns = ifelse(GEWKPITYP == "LE" |
-                                        GEWKPITYP == "TE",
+                                        GEWKPITYP == "TE" ,
                                         yes = paste("GEW",
                                                      substr(bic_pgewkpi$GEWVONST, 13, 14),
                                                      substr(bic_pgewkpi$GEWBISST, 13, 14),
                                                      substr(bic_pgewkpi$GEWKPITYP, 1, 1),
                                                      sep = ""),
-                                        no = NA)) %>%
+                                        no = ifelse(GEWKPITYP == "ST",
+                                                    yes = strip_bic(GEWSTAT),
+                                                    no = NA)
+                                        )
+         ) %>%
   filter(OBJVERS == "A" & GEWKPI != "")
 kpi_gen <- left_join(x = kpi_gen,
                      y = bic_pgewkpi,
                      by = "to_become_KPI_columns")
 
-# Adding special case GEWSTAT65, KPI51
-source_rows <- source_df %>%
-  filter(!is.na(GEWSTAT65))
-
-kpi_gen <- rbind(kpi_gen,
-                 c("", nrow(source_rows), "KPI51",
-                   "", "", "", "", ""))
+# # Adding special case GEWSTAT65, KPI51
+# source_rows <- source_df %>%
+#   filter(!is.na(GEWSTAT65))
+# 
+# kpi_gen <- rbind(kpi_gen,
+#                  c("", nrow(source_rows), "KPI51",
+#                    "", "", "", "", ""))
 
 kpi_gen$KPIs_to_be_generated = as.numeric(kpi_gen$KPIs_to_be_generated)
 
@@ -477,6 +495,7 @@ test_that(desc = paste("The number of KPIs to be generated equals",
             expect_true(sum(kpi_gen$KPIs_to_be_generated) ==
                         nrow(result_df))
           })
+rm("a")
 ```
 
 Check that the necessary amount has been generated per KPI.
@@ -507,6 +526,8 @@ LE_KPIs <- bic_pgewkpi %>%
   filter(GEWKPITYP == "LE")
 TE_KPIs <- bic_pgewkpi %>%
   filter(GEWKPITYP == "TE")
+ST_KPIs <- bic_pgewkpi %>%
+  filter(GEWKPITYP == "ST")
 
 a <- result_df %>%
   filter(GEWKPI %in% LE_KPIs$GEWKPI) %>%
@@ -560,7 +581,7 @@ deltas <- apply(X = a,
 #that this is indeed the case
 a_where_delta_bigger_0 <- a[deltas > 0, ]
 a_relevant_gewtstp45 <- a %>%
-  filter(INDEX %in% a_where_delta_bigger_0$INDEX) %>%
+  filter(INDEX.x %in% a_where_delta_bigger_0$INDEX.x) %>%
   select(GEWTSTP45)
 #Timestamps are stored 
 a_relevant_gewtstp45_recalc_budapest <- with_tz(a_relevant_gewtstp45,
@@ -570,6 +591,44 @@ test_that(desc = paste("The difference between the relevant GEWTSTXXL field",
                        "and the calday is not zero everywhere and not because of",
                        "timezone difference"),
           code = expect_equal(sum(deltas) - within_an_hour_after_midnight, 0))
-
+rm("a", "a_relevant_gewtstp45_recalc_budapest",
+   "a_relevant_gewtstp45", "a_where_delta_bigger_0")
   
+```
+
+#GH_EW_B02 from DS05
+
+Reading in data and fixing dates.
+
+```{r ds05_import}
+ds05 <- read.csv(file = paste(PROJECT_DIR,
+                     "0wm_ds05_samplerecords.txt",
+                     sep=""),
+               header = TRUE,
+               sep = "\t",
+               dec = ",",
+               stringsAsFactors = FALSE,
+               encoding = "latin1")
+ds05 <- tbl_df(ds05)
+
+ds05 <- ds05 %>%
+  mutate_each_(funs(ymd_hms),
+               vars = c("Quittierung", "X0WM_CREA_AT",
+                        "Anfangsdatum", "Wareneingang"))
+```
+
+```{r experiment}
+
+df <- ds05 %>%
+  arrange(Von.Handling.Unit, Quittierung)
+df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
+   -Belegtyp, -...INDOCNO, -Prüfart, -...MAT_GRP, -X0WM_NLBER,
+   X0WM_NPTYP, -X0WM_PRCES, -X0WM_PRIO, -...PTWYINV,
+   -Belegtyp.1, -X0WM_QDOCNO, -...RDOCCAT, 
+   -Belegnummer.der.Belegreferenz, -X0WM_RITMNO, -Sicht,
+   -X0WM_SRSRC, -...SSTROLE, -Von.TE, -X0WM_ST_USE,
+   -X0WM_TOSTAT, -X0WM_TRART, -...TSTROLE, -X0WM_UNIT_T,
+   -X0WM_UNIT_V, -X0WM_UNIT_W, -X0WM_VALUOM, -X0WM_VAS,
+   -...VFDA_TS, -X0WM_VLBER, -Welle, -...WAVE_IT, -X0WM_CAPA)
+df <- df %>% select(Von.Handling.Unit, Nach.Handling.Unit, X0WM_MATNR, X0WM_VLTYP, X0WM_NLTYP, Prozess, Quittierung, Queue, Wareneingang, X0WM_WHO, X0WM_TANUM)
 ```
