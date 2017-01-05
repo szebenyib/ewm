@@ -696,11 +696,46 @@ df <- df %>% select(-X, -AME, -Charge, -X0WM_COO, -X0WM_DRSRC,
    -X0WM_UNIT_V, -X0WM_UNIT_W, -X0WM_VALUOM, -X0WM_VAS,
    -...VFDA_TS, -X0WM_VLBER, -Welle, -...WAVE_IT, -X0WM_CAPA)
 df <- df %>% select(Von.Handling.Unit, Nach.Handling.Unit, X0WM_MATNR, X0WM_VLTYP, X0WM_NLTYP, Prozess, Quittierung, Queue, Wareneingang, X0WM_WHO, X0WM_TANUM)
+df <- df %>%
+  arrange(Nach.Handling.Unit,
+          Quittierung,
+          X0WM_TANUM)
 ```
 
 Checking that only rows remain, which have LGTYP in either the Vonlagertyp or Nachlagertyp.
 
 ```{r ds05_filetering_by_lgtyp}
 df <- df %>%
-  filter(Von.Handling.Unit %in% TA_KPIs)
+  filter(X0WM_VLTYP %in% TA_KPIs$GEWLTYP |
+        X0WM_NLTYP %in% TA_KPIs$GEWLTYP)
+```
+
+
+```{r ds05_unique_HUs}
+unique_hus <- df %>%
+  count(Nach.Handling.Unit) %>%
+  select(Nach.Handling.Unit)
+```
+
+```{r ds05_pair_marking}
+pair_marker_counter <- 1
+test_that(desc = "The data to be checked should not have less than two rows",
+          code = expect_gte(object = nrow(df), expected = 2))
+df <- df %>%
+  mutate(pair_marker = NA)
+for (i in 1:nrow(df)) {
+  if (i != 1) {
+    if (df$X0WM_VLTYP[i - 1] != df$X0WM_NLTYP[i]) {
+      pair_marker_counter <- pair_marker_counter + 1
+    }
+  }
+  df$pair_marker[i] = pair_marker_counter
+}
+```
+
+```{r ds05_adding_towards_away_movement}
+df <- df %>%
+  group_by(pair_marker) %>%
+  mutate(towards = min(Quittierung),
+         away = max(Quittierung))
 ```
