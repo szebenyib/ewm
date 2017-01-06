@@ -672,6 +672,7 @@ ds05 <- read.csv(file = paste(PROJECT_DIR,
                sep = "\t",
                dec = ",",
                stringsAsFactors = FALSE,
+               na.strings = "",
                encoding = "latin1")
 ds05 <- tbl_df(ds05)
 
@@ -725,7 +726,12 @@ df <- df %>%
   mutate(pair_marker = NA)
 for (i in 1:nrow(df)) {
   if (i != 1) {
-    if (df$X0WM_VLTYP[i - 1] != df$X0WM_NLTYP[i]) {
+    if ((!is.na(df$X0WM_VLTYP[i - 1]) &
+        !is.na(df$X0WM_NLTYP[i]) & 
+        df$X0WM_VLTYP[i - 1] != df$X0WM_NLTYP[i]) |
+        (!is.na(df$X0WM_VLTYP[i - 1]) &
+         !is.na(df$X0WM_VLTYP[i]) &
+          df$X0WM_VLTYP[i - 1] != df$X0WM_VLTYP[i])){
       pair_marker_counter <- pair_marker_counter + 1
     }
   }
@@ -733,9 +739,27 @@ for (i in 1:nrow(df)) {
 }
 ```
 
-```{r ds05_adding_towards_away_movement}
+```{r ds05_adding_towards_away_movements}
 df <- df %>%
   group_by(pair_marker) %>%
   mutate(towards = min(Quittierung),
          away = max(Quittierung))
+```
+
+```{r ds05_adding_kpi_based_on_lagertyp}
+df <- df %>%
+  mutate(relevant_lgtyp = ifelse(is.na(X0WM_VLTYP),
+                                 yes = X0WM_NLTYP,
+                                 no = X0WM_VLTYP))
+df <- left_join(x = df,
+               y = TA_KPIs,
+               by = c("relevant_lgtyp" = "GEWLTYP")) %>%
+  select(1:15, GEWKPI)
+```
+
+```{r ds05_calculating_kpis}
+kpis <- df %>%
+  group_by(pair_marker) %>%
+  mutate(kpi = GEWKPI,
+         )
 ```
