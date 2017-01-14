@@ -35,9 +35,22 @@ If this document could be generated, then all tests have passed.
 ## Global functions
 ```{r global_function_definitions}
 strip_bic <- function(name) {
-  substr(x = name,
+  return(substr(x = name,
          start = 6,
-         stop = nchar(name))
+         stop = nchar(name)))
+}
+strip_x0wm_ <- function(name) {
+  first_five_chars <- substr(x = name,
+                             start = 1,
+                             stop = 5)
+  if (first_five_chars == 'X0WM_') {
+    result <- substr(x = name,
+                     start = 6,
+                     stop = nchar(name))
+  } else {
+    result <- name
+  }
+  return(result)
 }
 ```
 
