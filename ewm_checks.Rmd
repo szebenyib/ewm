@@ -771,8 +771,126 @@ df <- left_join(x = df,
 ```
 
 ```{r ds05_calculating_kpis}
-kpis <- df %>%
-  group_by(pair_marker) %>%
-  mutate(kpi = GEWKPI,
-         )
+# kpis <- df %>%
+#   group_by(pair_marker) %>%
+#   mutate(kpi = GEWKPI,
+#          )
+```
+
+# Lageraufgaben starting with 7
+
+## Reading data
+
+```{r ds05_import_of_sevens}
+# Uniformize column names between BW and AW* sources
+uniformize_ds05_seven_colnames <- function(name) {
+  if (name == "Quittierung") {
+    result <- "CONFIRMED_AT"
+  } else if (name == "Nach.Handling.Unit") {
+    result <- "NLENR"
+  } else if (name == "Von.Handling.Unit") {
+    result <- "VLENR"
+  } else {
+    result <- name
+  }
+  return(result)
+}
+df <- read.csv(file = paste(PROJECT_DIR,
+                     "0wm_ds05_all_sevens_awe.txt",
+                     sep=""),
+               sep = "\t",
+               header = TRUE,
+               stringsAsFactors = FALSE,
+               na.strings = "")
+df <- read.csv(file = paste(PROJECT_DIR,
+                     "0wm_ds05_50000_sevens_awq.txt",
+                     sep=""),
+               sep = "\t",
+               header = TRUE,
+               stringsAsFactors = FALSE,
+               na.strings = "")
+colnames(df) <- unlist(lapply(X = colnames(df),
+                              FUN = strip_x0wm_))
+colnames(df) <- unlist(lapply(X = colnames(df),
+                              FUN = uniformize_ds05_seven_colnames))
+if (class(df$CONFIRMED_AT) == "character") {
+  df$CONFIRMED_AT <- gsub(pattern = "\\.",
+                          replacement = "",
+                          x = df$CONFIRMED_AT)
+  df$CONFIRMED_AT <- as.numeric(df$CONFIRMED_AT)
+}
+df <- tbl_df(df)
+
+df <- df %>%
+  mutate_each_(funs(ymd_hms),
+               vars = c("CONFIRMED_AT")) %>%
+  select(-X)
+```
+
+Filter out Lageraufgaben, which have no source or target LGTYP. They would not be relevant for KPIs.
+
+```{r ds05_sevens_preproces}
+df <- df %>%
+  filter(!(is.na(VLTYP) & is.na(NLTYP)))
+```
+
+## Checks
+
+```{r ds05_sevens_check_that_they_are_indeed_sevens}
+a <- df %>%
+  filter(TANUM < 7000000000 |
+         TANUM > 7999999999)
+test_that(desc = "All tanums starting with 7",
+          code = expect_true(nrow(a) == 0))
+rm("a")
+```
+
+
+```{r ds05_sevens_check_no_wtsubit_different_from_one}
+if ("...WTSUBIT" %in% colnames(df)) {
+  #Checking only from BW source, AW* sources won't contain it.
+  a <- df %>%
+    filter(...WTSUBIT != 1)
+  test_that(desc = "All tanums starting with 7 have a WTSUBIT = 1",
+            code = expect_true(nrow(a) == 0))
+  rm("a")
+}
+```
+
+```{r ds05_sevens_check_same_tanum_same_timestamp_then}
+a <- df %>%
+  filter(!NLTYP %in% c('LMWE', 'LMWA') &
+         !VLTYP %in% c('LMWE', 'LMWA'))
+
+a <- a %>%
+  group_by(TANUM) %>%
+  mutate(group_confirmed_at = max(CONFIRMED_AT))
+
+a <- a %>%
+  filter(CONFIRMED_AT != group_confirmed_at) %>%
+  mutate(confirmed_at_delta_inside_tanum = CONFIRMED_AT - group_confirmed_at)
+
+a %>%
+  arrange(confirmed_at_delta_inside_tanum) %>%
+  select(confirmed_at_delta_inside_tanum, TANUM)
+
+b <- a %>% 
+  filter(TANUM == 7000003375)
+
+a %>%
+  filter(TANUM < 7000000000)
+rm("a", "b")
+```
+
+```{r ds05_seven_check_no_lgtyp_change}
+a <- df %>%
+  mutate(VLTYP = ifelse(!is.na(VLTYP),
+                        yes = VLTYP,
+                        no = "") ) %>%
+  mutate(NLTYP = ifelse(!is.na(NLTYP),
+                        yes = NLTYP,
+                        no = "") )  
+a %>% filter(TANUM >= 7000000000 &
+              TANUM <= 7999999999 &
+              VLTYP != NLTYP)
 ```
