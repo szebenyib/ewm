@@ -12,7 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r setup, include=FALSE, echo=FALSE}
-PROJECT_DIR <- '/home/szebenyib/win7_link/projektek/2016_audi/ewm/'
+PROJECT_DIR <- '/home/szebenyib/win7_link/projektek/2016_audi/ewm/checks/'
+INPUT_FILES_DIR <- paste(PROJECT_DIR,
+                         "input_files",
+                         .Platform$file.sep,
+                         sep = "")
 knitr::opts_knit$set(root.dir = PROJECT_DIR)
 options(java.parameters = "-Xmx4096m")
 ```
@@ -29,6 +33,17 @@ library(stringr)
 # Note
 
 If this document could be generated, then all tests have passed.
+
+# Input data
+
+You will need the following input files for this script to run:
+
+* /bic/pgewkpi - Use SE16 to display its contents and then export it as a tab separated table.
+* result_package_gh_ew_01_mls.csv - While debugging export the table contents of the result_package in xls. Save the xls as a csv file in excel.
+* source_package_gh_ew_b02.csv - While debugging export the table contents of the source_package in xls. Save the xls as a csv file in excel.
+* result_package_gh_ew_b02.csv - While debugging export the table contents of the result_package in xls. Save the xls as a csv file in excel.
+* records_in_out_gh_ew_b02.csv - While debugging export the table contents of the p_t_cross table that is available under the log object in xls. Save the xls as a csv file in excel.
+* 0wm_ds05_50000_sevens_awq.txt - Export the displayed contents of the gh_wm05 with the following columns: TANUM, TAPOS, VLTYP, VLENR, NLENR, CONFIRMED_AT.
 
 # Global
 
@@ -59,7 +74,7 @@ strip_x0wm_ <- function(name) {
 The input txt is a tab separated export of the table /bic/pgewkpi.
 
 ```{r read_bic_pgewkpi}
-bic_pgewkpi <- read.csv(file = paste(PROJECT_DIR,
+bic_pgewkpi <- read.csv(file = paste(INPUT_FILES_DIR,
                        "bic_pgewkpi.txt",
                        sep=""),
                header = TRUE,
@@ -108,7 +123,7 @@ TA_KPIs <- bic_pgewkpi %>%
 ## Input reading
 
 ```{r read_data}
-df <- read.csv(file = paste(PROJECT_DIR,
+df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "result_package_gh_ew_01_mls.csv",
                      sep=""),
                header = TRUE,
@@ -381,7 +396,7 @@ Reading the following input files:
 * setup table (bic_pgewkpi)
 
 ```{r read_data2}
-source_df <- read.csv(file = paste(PROJECT_DIR,
+source_df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "source_package_gh_ew_b02.csv",
                      sep=""),
                header = TRUE,
@@ -389,7 +404,7 @@ source_df <- read.csv(file = paste(PROJECT_DIR,
                dec = ",",
                stringsAsFactors = FALSE)
 source_df <- tbl_df(source_df)
-result_df <- read.csv(file = paste(PROJECT_DIR,
+result_df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "result_package_gh_ew_b02.csv",
                      sep=""),
                header = TRUE,
@@ -397,7 +412,7 @@ result_df <- read.csv(file = paste(PROJECT_DIR,
                dec = ",",
                stringsAsFactors = FALSE)
 result_df <- tbl_df(result_df)
-in_out_df <- read.csv(file = paste(PROJECT_DIR,
+in_out_df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "records_in_out_gh_ew_b02.csv",
                      sep=""),
                header = TRUE,
@@ -678,7 +693,7 @@ rm("a", "a_relevant_gewtstp45_recalc_budapest",
 ## Reading data
 
 ```{r ds05_import}
-ds05 <- read.csv(file = paste(PROJECT_DIR,
+ds05 <- read.csv(file = paste(INPUT_FILES_DIR,
                      "0wm_ds05_samplerecords.txt",
                      sep=""),
                header = TRUE,
@@ -795,14 +810,14 @@ uniformize_ds05_seven_colnames <- function(name) {
   }
   return(result)
 }
-df <- read.csv(file = paste(PROJECT_DIR,
+df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "0wm_ds05_all_sevens_awe.txt",
                      sep=""),
                sep = "\t",
                header = TRUE,
                stringsAsFactors = FALSE,
                na.strings = "")
-df <- read.csv(file = paste(PROJECT_DIR,
+df <- read.csv(file = paste(INPUT_FILES_DIR,
                      "0wm_ds05_50000_sevens_awq.txt",
                      sep=""),
                sep = "\t",
